@@ -103,18 +103,6 @@ Changepoints: Automatic detection of trend changes
 Confidence Intervals: 95% prediction intervals
 Data Frequency: Daily stock prices
 
-📁 File Structure
-
-
-stock-forecasting-app/
-
-│
-├── main.py               # Main application file
-├── README.md             # This file
-├── requirements.txt      # Python dependencies (optional)
-└── sample_data/          # Example CSV files (optional)
-
-
 🔧 Troubleshooting
 Common Issues
 "No data found for stock symbol"
