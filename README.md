@@ -137,15 +137,6 @@ Export Functionality: Download predictions as PDF/Excel
 Real-time Updates: Live data streaming
 Technical Indicators: RSI, MACD, Moving averages
 
-Contributing
-We welcome contributions! Areas for improvement:
-
-Additional forecasting models
-Enhanced visualizations
-Performance optimizations
-Mobile responsiveness
-Testing suite
-
 📄 License
 This project is open source and available under the MIT License.
 
