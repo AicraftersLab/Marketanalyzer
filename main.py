@@ -130,7 +130,6 @@ if st.session_state.data_loaded and not st.session_state.dataFrameyahoo.empty:
                 prices = dataFrameyahoo['Close']
                 ax.plot(dates, prices)
             else:
-                # If no Date column, check if index is datetime
                 if pd.api.types.is_datetime64_any_dtype(dataFrameyahoo.index):
                     ax.plot(dataFrameyahoo.index, dataFrameyahoo['Close'])
                 else:
@@ -159,7 +158,6 @@ if st.session_state.data_loaded and not st.session_state.dataFrameyahoo.empty:
         else:
             try:
                 with st.spinner('Running  model...'):
-                    # First, flatten the multi-level column names
                     if isinstance(dataFrameyahoo.columns, pd.MultiIndex):
 
                         new_columns = []
@@ -190,25 +188,18 @@ if st.session_state.data_loaded and not st.session_state.dataFrameyahoo.empty:
                     else:
                         st.error("No Close column found in the data.")
                         st.stop()
-                    
-                    # Remove any rows with NaN values
                     df_prophet = df_prophet.dropna()
-                    
-                    # Sort by date and ensure proper datetime format
+
                     df_prophet = df_prophet.sort_values('ds').reset_index(drop=True)
-                    
-                    # Ensure ds column is datetime and properly formatted
+
                     df_prophet['ds'] = pd.to_datetime(df_prophet['ds']).dt.tz_localize(None)
-                    
-                    # Ensure regular frequency (daily) for Prophet
+
                     df_prophet = df_prophet.set_index('ds').asfreq('D').reset_index()
                     df_prophet['y'] = df_prophet['y'].interpolate(method='linear')
-                    
-                    # Check if we have enough data
+
                     if len(df_prophet) > 10:
                         st.write(f"Using {len(df_prophet)} data points for prediction")
-                        
-                        # Initialize Prophet model with explicit frequency
+
                         model = Prophet(
                             yearly_seasonality=True,
                             weekly_seasonality=True,
@@ -216,8 +207,7 @@ if st.session_state.data_loaded and not st.session_state.dataFrameyahoo.empty:
                             changepoint_prior_scale=0.05,
                             interval_width=0.95
                         )
-                        
-                        # Fit the model
+
                         model.fit(df_prophet)
                         last_date = df_prophet['ds'].max()
                         future_dates_full = pd.date_range(
@@ -225,41 +215,25 @@ if st.session_state.data_loaded and not st.session_state.dataFrameyahoo.empty:
                             periods=365,
                             freq='D'
                         )
-                        
-                        # Combine historical and future dates
                         all_dates = pd.concat([
                             df_prophet['ds'],
                             pd.Series(future_dates_full)
                         ]).reset_index(drop=True)
                         
                         future_df = pd.DataFrame({'ds': all_dates})
-                        
-                        # Make predictions
                         forecast = model.predict(future_df)
-                        
-                        # Get current price and date info
                         current_price = df_prophet['y'].iloc[-1]
                         current_date = df_prophet['ds'].iloc[-1]
-                        
-                        # Check if data is current
                         days_behind = (pd.Timestamp.now().normalize() - current_date).days
                         
                         if days_behind > 5:
                             st.warning(f"⚠️ Data is {days_behind} days old (last update: {current_date.strftime('%Y-%m-%d')}). Consider updating to get current predictions.")
                         else:
                             st.success(f"✅ Data is current (last update: {current_date.strftime('%Y-%m-%d')})")
-                        
-                        # Get predictions for specific time periods
                         future_forecast = forecast[forecast['ds'] > current_date]
-                        
-                        # 30 days prediction
                         prediction_30d = future_forecast.iloc[29] if len(future_forecast) > 29 else None
-                        # 90 days prediction  
                         prediction_90d = future_forecast.iloc[89] if len(future_forecast) > 89 else None
-                        # 1 year prediction
                         prediction_1year = future_forecast.iloc[-1] if len(future_forecast) > 0 else None
-                        
-                        # Display key predictions with current context
                         st.markdown("### 🎯 **Key Predictions**")
                         st.caption(f"Based on data through: {current_date.strftime('%B %d, %Y')}")
                         
@@ -305,27 +279,19 @@ if st.session_state.data_loaded and not st.session_state.dataFrameyahoo.empty:
                                     value=f"${prediction_1year['yhat']:.2f}",
                                     delta=f"{change_pct_1year:.1f}%"
                                 )
-                        
-                        # Display recent forecast data
                         st.markdown("### 📅 **Detailed Forecast Table**")
                         forecast_display = future_forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].head(20).copy()
                         forecast_display['ds'] = forecast_display['ds'].dt.strftime('%Y-%m-%d')
                         forecast_display.columns = ['Date', 'Predicted Price', 'Lower Bound', 'Upper Bound']
                         forecast_display = forecast_display.round(2)
                         st.dataframe(forecast_display, use_container_width=True)
-                        
-                        # Plot the forecast with interactive time period selection
                         st.markdown("### 📈 **Interactive Forecast Visualization**")
-                        
-                        # Time period selector
                         time_period = st.selectbox(
                             "Select forecast period:",
                             ["20 Days", "90 Days", "1 Year"],
                             index=2,  # Default to 1 Year
                             key="forecast_period"  # Add unique key to prevent conflicts
                         )
-                        
-                        # Create future dates for selected period using pd.date_range
                         if time_period == "20 Days":
                             periods = 20
                             title_suffix = "20 Days"
@@ -397,7 +363,6 @@ if st.session_state.data_loaded and not st.session_state.dataFrameyahoo.empty:
                             hovertemplate='<b>%{x}</b><br>Actual: $%{y:.2f}<extra></extra>'
                         ))
                         
-                        # Add prediction line (now connected to historical data)
                         fig.add_trace(go.Scatter(
                             x=prediction_data['ds'],
                             y=prediction_data['yhat'],
@@ -406,8 +371,6 @@ if st.session_state.data_loaded and not st.session_state.dataFrameyahoo.empty:
                             line=dict(color='red', width=2),
                             hovertemplate='<b>%{x}</b><br>Predicted: $%{y:.2f}<extra></extra>'
                         ))
-                        
-                        # Add confidence interval (upper bound)
                         fig.add_trace(go.Scatter(
                             x=prediction_data['ds'],
                             y=prediction_data['yhat_upper'],
