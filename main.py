@@ -5,6 +5,7 @@ import numpy as np
 import streamlit as st 
 import datetime
 
+/ Load the model by cache system to avoid the issues of deployment
 @st.cache_resource
 def load_prophet():
     try:
