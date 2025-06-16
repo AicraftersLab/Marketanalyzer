@@ -1,4 +1,2 @@
 build-essential
-gcc
-g++
 python3-dev
